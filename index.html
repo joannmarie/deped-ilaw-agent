@@ -603,4 +603,163 @@ function selTerm(el) {
   term      = el.dataset.term;
   termDates = el.dataset.dates;
   week      = 'Week 1';
-  renderWeeks(parseInt(
+  renderWeeks(parseInt(el.dataset.weeks));
+}
+
+function renderWeeks(count) {
+  const g = document.getElementById('weekGrid');
+  g.innerHTML = Array.from({length: count}, (_, i) => {
+    const w = 'Week ' + (i + 1);
+    return `<div class="week-chip${w === week ? ' sel' : ''}" onclick="selWeek(this,'${w}')">${w}</div>`;
+  }).join('');
+}
+
+function selWeek(el, w) {
+  document.querySelectorAll('.week-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  week = w;
+}
+
+function selSubj(el) {
+  document.querySelectorAll('.subject-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  subject = el.dataset.value;
+}
+
+function setLoading(isLoading) {
+  const btn = document.getElementById('genBtn');
+  const spin = document.getElementById('genSpin');
+  const label = document.getElementById('genLabel');
+  btn.disabled = isLoading;
+  if(isLoading) {
+    spin.style.display = 'block';
+    label.innerText = 'Generating Framework Data...';
+  } else {
+    spin.style.display = 'none';
+    label.innerText = 'Generate ILAW Lesson Plan + Student PowerPoint';
+  }
+}
+
+function showErr(msg) {
+  const eb = document.getElementById('errBox');
+  eb.innerText = msg;
+  eb.style.display = 'block';
+}
+
+function hideErr() {
+  document.getElementById('errBox').style.display = 'none';
+}
+
+// ── Generate ─────────────────────────────────────────────────
+async function generate() {
+  const topic   = document.getElementById('topic').value.trim();
+  const lc      = document.getElementById('lc').value.trim();
+  const lcd     = document.getElementById('lcd').value.trim();
+  const cp      = document.getElementById('cp').value.trim();
+  const teacher = document.getElementById('tname').value.trim() || 'Teacher';
+  const section = document.getElementById('sec').value.trim() || 'Grade 8';
+
+  if (!topic) { showErr('Please enter a lesson topic first.'); return; }
+  hideErr();
+  setLoading(true);
+  document.getElementById('resultWrap').style.display = 'none';
+  document.getElementById('noteBox').style.display = 'none';
+
+  const prompt = `You are an expert Filipino educator. Generate an ILAW-format lesson plan alignment and slide blueprint for Grade 8, mapping out the full metadata structure. Topic: ${topic}, Subject: ${subject}, Term: ${term}, Week: ${week}. Teacher: ${teacher}, Section: ${section}, Code: ${lc}, Context: ${cp}, Curriculum: ${lcd}`;
+
+  try {
+    const res = await fetch('/api/generate-pptx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Server error');
+    
+    result = data;
+    renderResult();
+  } catch(e) {
+    showErr('Could not generate lesson plan. Please try again. (' + e.message + ')');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Render Result & Tab Operations ─────────────────────────────
+function renderResult() {
+  const wrap = document.getElementById('resultWrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div class="result-card fade-up">
+      <div class="result-header">
+        <div class="result-header-title">✅ \${result.meta?.topic || 'Lesson Plan'}</div>
+        <div class="result-header-meta">\${result.meta?.subject || ''} · \${result.meta?.term || ''}</div>
+      </div>
+      <div class="result-tabs">
+        <button class="rtab active" id="t-ilaw" onclick="switchTab('ilaw')">💡 ILAW Lesson Plan</button>
+        <button class="rtab" id="t-slides" onclick="switchTab('slides')">🎓 Student Slides Preview</button>
+      </div>
+      <div class="result-body" id="resultBody">\${renderILAW()}</div>
+      <div class="dl-row">
+         <button class="dl-btn pptx" onclick="downloadPPTX()"><span class="dl-label">Download PowerPoint Presentation</span></button>
+      </div>
+    </div>`;
+}
+
+function switchTab(tab) {
+  const ilawTab = document.getElementById('t-ilaw');
+  const slidesTab = document.getElementById('t-slides');
+  const body = document.getElementById('resultBody');
+  
+  if(tab === 'ilaw') {
+    ilawTab.classList.add('active');
+    slidesTab.classList.remove('active');
+    body.innerHTML = renderILAW();
+  } else {
+    slidesTab.classList.add('active');
+    ilawTab.classList.remove('active');
+    body.innerHTML = renderSlides();
+  }
+}
+
+function renderILAW() {
+  if(!result) return '';
+  return `
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-lbl">Competency Code</div><div class="meta-val">\${result.meta?.competencyCode || 'N/A'}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Duration</div><div class="meta-val">\${result.meta?.duration || '60 mins'}</div></div>
+    </div>
+    <div class="ilaw-block">
+      <div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#3B5BA5">I</div><div class="ilaw-block-title">Intentions</div></div>
+      <div class="obj-text"><strong>Competency:</strong> \${result.intentions?.competency || ''}</div>
+    </div>
+    <div class="ilaw-block">
+      <div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#1A7A4A">L</div><div class="ilaw-block-title">Learning Experiences</div></div>
+      \${(result.learningExperiences || []).map(le => `
+        <div class="le-step">
+          <div class="le-num">\${le.step}</div>
+          <div class="le-desc"><strong>\${le.phase} (\${le.duration}):</strong> \${le.description}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function renderSlides() {
+  if(!result || !result.slides) return 'No slide preview available.';
+  return (result.slides).map(s => `
+    <div class="slide-card">
+      <div class="slide-num">Slide \${s.slideNum} (\${s.type})</div>
+      <div class="slide-title">\${s.title || ''}</div>
+      <div class="slide-pts">\${s.subtitle || s.hookQuestion || s.instructions || s.points?.join('<br>') || ''}</div>
+      \${s.teacherNote ? `<div class="slide-note">💡 <strong>Teacher Note:</strong> \${s.teacherNote}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function downloadPPTX() {
+  alert("Initiating slide deck compilation structure...");
+}
+</script>
+</body>
+</html>
