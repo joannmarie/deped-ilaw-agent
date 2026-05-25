@@ -10,6 +10,6 @@
     "pptxgenjs": "^3.12.0"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   }
 }
