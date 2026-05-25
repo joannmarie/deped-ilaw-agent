@@ -584,19 +584,16 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
 </div>
 
 <script>
-// ── State ────────────────────────────────────────────────────
 let subject   = 'TLE 8';
 let term      = 'Term 1';
 let termDates = 'June 8 – Sept 15, 2026';
 let week      = 'Week 1';
 let result    = null;
 
-// Setup layout on page load
 window.onload = function() {
   renderWeeks(14);
 };
 
-// ── Term / Week / Subject ────────────────────────────────────
 function selTerm(el) {
   document.querySelectorAll('.term-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
@@ -610,7 +607,7 @@ function renderWeeks(count) {
   const g = document.getElementById('weekGrid');
   g.innerHTML = Array.from({length: count}, (_, i) => {
     const w = 'Week ' + (i + 1);
-    return `<div class="week-chip${w === week ? ' sel' : ''}" onclick="selWeek(this,'${w}')">${w}</div>`;
+    return '<div class="week-chip' + (w === week ? ' sel' : '') + '" onclick="selWeek(this,\'' + w + '\')">' + w + '</div>';
   }).join('');
 }
 
@@ -650,7 +647,6 @@ function hideErr() {
   document.getElementById('errBox').style.display = 'none';
 }
 
-// ── Generate ─────────────────────────────────────────────────
 async function generate() {
   const topic   = document.getElementById('topic').value.trim();
   const lc      = document.getElementById('lc').value.trim();
@@ -665,7 +661,7 @@ async function generate() {
   document.getElementById('resultWrap').style.display = 'none';
   document.getElementById('noteBox').style.display = 'none';
 
-  const prompt = `You are an expert Filipino educator. Generate an ILAW-format lesson plan alignment and slide blueprint for Grade 8, mapping out the full metadata structure. Topic: ${topic}, Subject: ${subject}, Term: ${term}, Week: ${week}. Teacher: ${teacher}, Section: ${section}, Code: ${lc}, Context: ${cp}, Curriculum: ${lcd}`;
+  const prompt = "Topic: " + topic + ", Subject: " + subject + ", Term: " + term + ", Week: " + week;
 
   try {
     const res = await fetch('/api/generate-pptx', {
@@ -686,25 +682,28 @@ async function generate() {
   }
 }
 
-// ── Render Result & Tab Operations ─────────────────────────────
 function renderResult() {
   const wrap = document.getElementById('resultWrap');
   wrap.style.display = 'block';
-  wrap.innerHTML = `
-    <div class="result-card fade-up">
-      <div class="result-header">
-        <div class="result-header-title">✅ \${result.meta?.topic || 'Lesson Plan'}</div>
-        <div class="result-header-meta">\${result.meta?.subject || ''} · \${result.meta?.term || ''}</div>
-      </div>
-      <div class="result-tabs">
-        <button class="rtab active" id="t-ilaw" onclick="switchTab('ilaw')">💡 ILAW Lesson Plan</button>
-        <button class="rtab" id="t-slides" onclick="switchTab('slides')">🎓 Student Slides Preview</button>
-      </div>
-      <div class="result-body" id="resultBody">\${renderILAW()}</div>
-      <div class="dl-row">
-         <button class="dl-btn pptx" onclick="downloadPPTX()"><span class="dl-label">Download PowerPoint Presentation</span></button>
-      </div>
-    </div>`;
+  
+  const title = result.meta && result.meta.topic ? result.meta.topic : 'Lesson Plan';
+  const subjText = result.meta && result.meta.subject ? result.meta.subject : '';
+  const termText = result.meta && result.meta.term ? result.meta.term : '';
+
+  wrap.innerHTML = '<div class="result-card fade-up">' +
+    '<div class="result-header">' +
+      '<div class="result-header-title">✅ ' + title + '</div>' +
+      '<div class="result-header-meta">' + subjText + ' · ' + termText + '</div>' +
+    '</div>' +
+    '<div class="result-tabs">' +
+      '<button class="rtab active" id="t-ilaw" onclick="switchTab(\'ilaw\')">💡 ILAW Lesson Plan</button>' +
+      '<button class="rtab" id="t-slides" onclick="switchTab(\'slides\')">🎓 Student Slides Preview</button>' +
+    '</div>' +
+    '<div class="result-body" id="resultBody">' + renderILAW() + '</div>' +
+    '<div class="dl-row">' +
+       '<button class="dl-btn pptx" onclick="downloadPPTX()"><span class="dl-label">Download PowerPoint Presentation</span></button>' +
+    '</div>' +
+  '</div>';
 }
 
 function switchTab(tab) {
@@ -725,36 +724,48 @@ function switchTab(tab) {
 
 function renderILAW() {
   if(!result) return '';
-  return `
-    <div class="meta-grid">
-      <div class="meta-item"><div class="meta-lbl">Competency Code</div><div class="meta-val">\${result.meta?.competencyCode || 'N/A'}</div></div>
-      <div class="meta-item"><div class="meta-lbl">Duration</div><div class="meta-val">\${result.meta?.duration || '60 mins'}</div></div>
-    </div>
-    <div class="ilaw-block">
-      <div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#3B5BA5">I</div><div class="ilaw-block-title">Intentions</div></div>
-      <div class="obj-text"><strong>Competency:</strong> \${result.intentions?.competency || ''}</div>
-    </div>
-    <div class="ilaw-block">
-      <div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#1A7A4A">L</div><div class="ilaw-block-title">Learning Experiences</div></div>
-      \${(result.learningExperiences || []).map(le => `
-        <div class="le-step">
-          <div class="le-num">\${le.step}</div>
-          <div class="le-desc"><strong>\${le.phase} (\${le.duration}):</strong> \${le.description}</div>
-        </div>
-      `).join('')}
-    </div>`;
+  const code = result.meta && result.meta.competencyCode ? result.meta.competencyCode : 'N/A';
+  const duration = result.meta && result.meta.duration ? result.meta.duration : '60 mins';
+  const comp = result.intentions && result.intentions.competency ? result.intentions.competency : '';
+  
+  let leHtml = '';
+  if (result.learningExperiences) {
+    for (let i = 0; i < result.learningExperiences.length; i++) {
+      const le = result.learningExperiences[i];
+      leHtml += '<div class="le-step">' +
+        '<div class="le-num">' + le.step + '</div>' +
+        '<div class="le-desc"><strong>' + le.phase + ' (' + le.duration + '):</strong> ' + le.description + '</div>' +
+      '</div>';
+    }
+  }
+
+  return '<div class="meta-grid">' +
+    '<div class="meta-item"><div class="meta-lbl">Competency Code</div><div class="meta-val">' + code + '</div></div>' +
+    '<div class="meta-item"><div class="meta-lbl">Duration</div><div class="meta-val">' + duration + '</div></div>' +
+  '</div>' +
+  '<div class="ilaw-block">' +
+    '<div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#3B5BA5">I</div><div class="ilaw-block-title">Intentions</div></div>' +
+    '<div class="obj-text"><strong>Competency:</strong> ' + comp + '</div>' +
+  '</div>' +
+  '<div class="ilaw-block">' +
+    '<div class="ilaw-block-header"><div class="ilaw-block-badge" style="background:#1A7A4A">L</div><div class="ilaw-block-title">Learning Experiences</div></div>' + leHtml +
+  '</div>';
 }
 
 function renderSlides() {
   if(!result || !result.slides) return 'No slide preview available.';
-  return (result.slides).map(s => `
-    <div class="slide-card">
-      <div class="slide-num">Slide \${s.slideNum} (\${s.type})</div>
-      <div class="slide-title">\${s.title || ''}</div>
-      <div class="slide-pts">\${s.subtitle || s.hookQuestion || s.instructions || s.points?.join('<br>') || ''}</div>
-      \${s.teacherNote ? `<div class="slide-note">💡 <strong>Teacher Note:</strong> \${s.teacherNote}</div>` : ''}
-    </div>
-  `).join('');
+  let slidesHtml = '';
+  for(let i = 0; i < result.slides.length; i++) {
+    const s = result.slides[i];
+    const content = s.subtitle || s.hookQuestion || s.instructions || (s.points ? s.points.join('<br>') : '');
+    slidesHtml += '<div class="slide-card">' +
+      '<div class="slide-num">Slide ' + s.slideNum + ' (' + s.type + ')</div>' +
+      '<div class="slide-title">' + (s.title || '') + '</div>' +
+      '<div class="slide-pts">' + content + '</div>' +
+      (s.teacherNote ? '<div class="slide-note">💡 <strong>Teacher Note:</strong> ' + s.teacherNote + '</div>' : '') +
+    '</div>';
+  }
+  return slidesHtml;
 }
 
 function downloadPPTX() {
