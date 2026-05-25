@@ -1,11 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "generate-pptx.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/generate-pptx", "dest": "generate-pptx.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/api/generate-pptx",
+      "destination": "/api/generate-pptx.js"
+    }
   ]
 }
