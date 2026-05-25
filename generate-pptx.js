@@ -1,9 +1,8 @@
-// Universal fallback import for Google's Generative AI package
-const pkg = require('@google/generative-ai');
-const GoogleGenerativeAI = pkg.GoogleGenerativeAI || pkg.GoogleGenAI;
+// Universal direct import strategy
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async (req, res) => {
-  // Setup CORS Headers
+  // Set explicit CORS headers for serverless execution
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -19,58 +18,65 @@ module.exports = async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is missing from Vercel Environment Variables.' });
+      return res.status(500).json({ error: 'Config Error: GEMINI_API_KEY is missing from Vercel.' });
     }
 
     const { prompt } = req.body;
     if (!prompt) {
-      return res.status(400).json({ error: 'No prompt found in the request body.' });
+      return res.status(400).json({ error: 'Request Error: No input prompt data provided.' });
     }
 
-    // Initialize using the corrected SDK class
-    const ai = new GoogleGenerativeAI(apiKey);
+    // Direct instantiation using standard Google SDK guidelines
+    const genAI = new GoogleGenerativeAI(apiKey);
     
-    // We target gemini-1.5-flash using the updated method signature
-    const model = ai.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
+    // Call the model factory helper directly
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const systemInstruction = 
-      "You are a master curriculum writer for the Department of Education (DepEd) in the Philippines. " +
-      "Generate an educational framework based strictly on this JSON blueprint. Do not add markdown wrappers or extra text.\n\n" +
-      "Structure:\n{\n" +
+      "You are a master curriculum writer for the Department of Education (DepEd) in the Philippines.\n" +
+      "Generate an educational plan based strictly on this JSON format blueprint. Output ONLY valid JSON. Do not wrap in markdown block backticks.\n\n" +
+      "Required Format:\n" +
+      "{\n" +
       "  \"meta\": { \"topic\": \"\", \"subject\": \"\", \"term\": \"\", \"competencyCode\": \"\", \"duration\": \"60 mins\" },\n" +
       "  \"intentions\": { \"competency\": \"\" },\n" +
       "  \"learningExperiences\": [ { \"step\": 1, \"phase\": \"\", \"duration\": \"\", \"description\": \"\" } ],\n" +
       "  \"slides\": [ { \"slideNum\": 1, \"type\": \"\", \"title\": \"\", \"subtitle\": \"\", \"teacherNote\": \"\" } ]\n" +
       "}";
 
-    const combinedPrompt = systemInstruction + "\n\nUser Input Data:\n" + prompt;
-    const result = await model.generateContent(combinedPrompt);
-    const responseText = result.response && result.response.text ? result.response.text().trim() : '';
+    const structuredPrompt = `${systemInstruction}\n\nUser Lesson Request:\n${prompt}`;
 
-    if (!responseText) {
-      throw new Error('The AI engine returned a blank response.');
+    // Request text output content generation
+    const result = await model.generateContent(structuredPrompt);
+    const response = await result.response;
+    let text = response.text().trim();
+
+    if (!text) {
+      throw new Error('AI engine generated an empty string response.');
     }
 
-    // Parse output cleanly
-    let finalJson;
+    // Strip out accidental markdown block syntax if returned by the model
+    if (text.startsWith('```')) {
+      text = text.replace(/^```json?/, '').replace(/```$/, '').trim();
+    }
+
+    // Validate and parse the clean payload
+    let cleanPayload;
     try {
-      finalJson = JSON.parse(responseText);
-    } catch (e) {
-      const fallbackMatch = responseText.match(/\{[\s\S]*\}/);
-      if (fallbackMatch) {
-        finalJson = JSON.parse(fallbackMatch[0]);
+      cleanPayload = JSON.parse(text);
+    } catch (parseErr) {
+      // Secondary fallback regex check if text is padded
+      const jsonExtract = text.match(/\{[\s\S]*\}/);
+      if (jsonExtract) {
+        cleanPayload = JSON.parse(jsonExtract[0]);
       } else {
-        throw new Error('AI data structure was not valid JSON.');
+        throw new Error('Failed to parse response structure as standard JSON text.');
       }
     }
 
-    return res.status(200).json(finalJson);
+    return res.status(200).json(cleanPayload);
 
   } catch (err) {
-    console.error('SERVER EXCEPTION:', err);
+    console.error('SERVER EXCEPTION DETAILS:', err);
     return res.status(500).json({ 
       error: 'The server processing agent ran into an internal error.',
       details: err.message 
