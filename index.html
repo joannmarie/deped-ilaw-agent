@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ILAW Lesson Planning Agent — DepEd Grade 8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & Variables ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:    #0D6E8A;
+  --blue-dk: #084F65;
+  --blue-lt: #E3F4F8;
+  --gold:    #F5A623;
+  --gold-lt: #FFF5E0;
+  --red:     #E8344A;
+  --green:   #1A7A4A;
+  --purple:  #7B3FA0;
+  --orange:  #C06820;
+  --dark:    #0A2A35;
+  --text:    #1A2E35;
+  --mid:     #4A6670;
+  --light:   #8AAAB5;
+  --bg:      #F4F8FA;
+  --white:   #FFFFFF;
+  --card-border: #D5E8EE;
+  --font-head: 'Sora', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --r: 14px;
+  --rs: 8px;
+  --shadow: 0 2px 12px rgba(13,110,138,0.10);
+  --shadow-lg: 0 8px 32px rgba(13,110,138,0.14);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.app { max-width: 900px; margin: 0 auto; padding: 0 0 4rem; }
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  background: var(--dark);
+  padding: 2rem 2.5rem 1.8rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.header-blob-1 { width: 280px; height: 280px; top: -100px; right: -60px; background: radial-gradient(circle, rgba(13,110,138,.45), transparent 70%); }
+.header-blob-2 { width: 180px; height: 180px; bottom: -80px; left: 25%; background: radial-gradient(circle, rgba(245,166,35,.2), transparent 70%); }
+
+.header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; }
+
+.header-logo {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-size: 22px; font-weight: 800;
+  color: var(--dark); flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(245,166,35,.4);
+}
+
+.header-text { flex: 1; }
+.header-text h1 {
+  font-family: var(--font-head); font-size: 20px; font-weight: 800;
+  color: #fff; letter-spacing: -0.4px; line-height: 1.2;
+}
+.header-text p { font-size: 12.5px; color: rgba(255,255,255,.55); margin-top: 3px; }
+
+.header-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.hbadge {
+  font-size: 11px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; letter-spacing: 0.2px;
+}
+.hbadge-gold  { background: var(--gold); color: var(--dark); }
+.hbadge-teal  { background: rgba(13,110,138,.5); color: #fff; border: 1px solid rgba(13,110,138,.6); }
+.hbadge-white { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.15); }
+
+/* ── ILAW Legend ──────────────────────────────────────────── */
+.ilaw-legend {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  margin: 1.5rem 1.5rem 0;
+  background: var(--white);
+  border-radius: var(--r);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.ilaw-pill {
+  padding: 14px 10px; text-align: center;
+  border-right: 1px solid var(--card-border);
+  transition: background .15s;
+}
+.ilaw-pill:last-child { border-right: none; }
+.ilaw-pill:hover { background: var(--bg); }
+
+.ilaw-letter { font-family: var(--font-head); font-size: 26px; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+.ilaw-word   { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
+.ilaw-desc   { font-size: 10.5px; color: var(--mid); line-height: 1.4; }
+
+/* ── Term Selector ───────────────────────────────────────── */
+.term-selector {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  margin: 1rem 1.5rem 0;
+  background: var(--white);
+  border-radius: var(--r);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.term-card {
+  padding: 14px 16px; cursor: pointer;
+  border-right: 1px solid var(--card-border);
+  transition: background .15s; user-select: none;
+}
+.term-card:last-child { border-right: none; }
+.term-card:hover:not(.active) { background: var(--bg); }
+.term-card.active { background: var(--blue); }
+
+.term-num  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--blue); margin-bottom: 2px; }
+.term-card.active .term-num { color: rgba(255,255,255,.7); }
+.term-name { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.term-card.active .term-name { color: #fff; }
+.term-dates { font-size: 11px; color: var(--light); }
+.term-card.active .term-dates { color: rgba(255,255,255,.65); }
+
+/* ── Card ─────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  margin: 1rem 1.5rem 0;
+  border-radius: var(--r);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 12px 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--card-border);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.step-badge {
+  width: 26px; height: 26px;
+  background: var(--blue);
+  color: #fff; border-radius: 8px;
+  font-family: var(--font-head); font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-header-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--blue); }
+
+.card-body { padding: 20px; }
+
+/* ── Subject Selector ────────────────────────────────────── */
+.subject-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+
+.subject-opt {
+  padding: 14px 10px; border: 1.5px solid var(--card-border);
+  border-radius: 10px; cursor: pointer;
+  text-align: center; user-select: none;
+  transition: all .18s; background: var(--white);
+}
+.subject-opt:hover { border-color: var(--blue); background: var(--blue-lt); }
+.subject-opt.sel { border-color: var(--blue); background: var(--blue); }
+
+.subject-icon { font-size: 24px; display: block; margin-bottom: 5px; }
+.subject-label { font-family: var(--font-head); font-size: 12px; font-weight: 700; color: var(--mid); }
+.subject-opt.sel .subject-label { color: #fff; }
+
+/* ── Week Grid ───────────────────────────────────────────── */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px,1fr));
+  gap: 6px; margin-top: 12px;
+}
+
+.week-chip {
+  padding: 8px 4px; text-align: center;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px; cursor: pointer;
+  font-family: var(--font-head); font-size: 11.5px; font-weight: 600;
+  color: var(--mid); background: var(--white);
+  transition: all .15s; user-select: none;
+}
+.week-chip:hover { border-color: var(--blue); color: var(--blue); }
+.week-chip.sel { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* ── Form Fields ──────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-head); font-size: 11px; font-weight: 700;
+  color: var(--mid); text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 7px;
+}
+
+.opt-tag {
+  font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0;
+  color: var(--light); background: var(--bg);
+  padding: 1px 8px; border-radius: 10px; border: 1px solid var(--card-border);
+}
+
+.hint { font-size: 11.5px; color: var(--light); margin-top: -4px; margin-bottom: 7px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+input[type="text"], select, textarea {
+  width: 100%; font-family: var(--font-body); font-size: 14px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 9px;
+  background: var(--white); color: var(--text);
+  transition: border-color .2s, box-shadow .2s;
+}
+input[type="text"]:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(13,110,138,.12);
+}
+textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── Generate Button ──────────────────────────────────────── */
+.gen-wrap { padding: 1.2rem 1.5rem 0; }
+
+.gen-btn {
+  width: 100%; padding: 15px 24px;
+  background: var(--blue);
+  color: #fff; border: none; border-radius: 11px;
+  font-family: var(--font-head); font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: -0.2px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  transition: background .2s, transform .1s, box-shadow .2s;
+  box-shadow: 0 4px 16px rgba(13,110,138,.3);
+}
+.gen-btn:hover { background: var(--blue-dk); box-shadow: 0 6px 20px rgba(13,110,138,.4); }
+.gen-btn:active { transform: scale(.99); }
+.gen-btn:disabled { background: #7AACBC; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.spin {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .65s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error ────────────────────────────────────────────────── */
+.err-box {
+  margin: 1rem 1.5rem 0; padding: 13px 16px;
+  background: #FEF2F2; border: 1px solid #FECACA;
+  border-radius: 9px; font-size: 13px; color: #991B1B;
+  display: none;
+}
+
+/* ── Result ───────────────────────────────────────────────── */
+.result-wrap { margin: 1.2rem 1.5rem 0; }
+
+.result-card {
+  background: var(--white);
+  border-radius: var(--r);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.result-header {
+  padding: 14px 20px; background: var(--dark);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.result-header-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; color: #fff; }
+.result-header-meta  { font-size: 11px; color: rgba(255,255,255,.5); }
+
+.result-tabs {
+  display: flex; background: var(--bg);
+  border-bottom: 1px solid var(--card-border);
+}
+.rtab {
+  flex: 1; padding: 11px 8px;
+  font-family: var(--font-head); font-size: 12px; font-weight: 700;
+  cursor: pointer; border: none; background: none;
+  color: var(--light); border-bottom: 2.5px solid transparent;
+  transition: all .2s;
+}
+.rtab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--white); }
+
+.result-body { padding: 22px; max-height: 580px; overflow-y: auto; }
+
+/* ── ILAW Content ─────────────────────────────────────────── */
+.meta-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+  margin-bottom: 20px;
+}
+.meta-item {
+  background: var(--bg); border: 1px solid var(--card-border);
+  border-radius: 8px; padding: 9px 12px;
+}
+.meta-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--light); margin-bottom: 2px; }
+.meta-val { font-family: var(--font-head); font-size: 12.5px; font-weight: 600; color: var(--text); }
+
+.ilaw-block { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); }
+.ilaw-block:last-child { border-bottom: none; margin-bottom: 0; }
+
+.ilaw-block-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ilaw-block-badge {
+  width: 30px; height: 30px; border-radius: 8px;
+  font-family: var(--font-head); font-size: 15px; font-weight: 800;
+  color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ilaw-block-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; color: var(--text); }
+.ilaw-block-sub { font-size: 11px; color: var(--light); }
+
+.obj-row { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 9px; }
+.obj-tag {
+  font-size: 10px; font-weight: 700; padding: 2px 9px;
+  border-radius: 5px; white-space: nowrap; margin-top: 2px; flex-shrink: 0;
+}
+.obj-text { font-size: 13.5px; line-height: 1.65; color: var(--text); }
+
+.le-step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 11px; }
+.le-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--green); color: #fff;
+  font-family: var(--font-head); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.le-phase { font-family: var(--font-head); font-size: 11px; font-weight: 700; color: var(--green); margin-bottom: 1px; }
+.le-desc  { font-size: 13.5px; line-height: 1.65; color: var(--text); }
+.le-time  { font-size: 10px; font-weight: 700; color: var(--green); white-space: nowrap; margin-top: 3px; flex-shrink: 0; }
+
+.ic p { font-size: 13.5px; line-height: 1.7; color: var(--text); margin-bottom: 8px; }
+.ic p:last-child { margin-bottom: 0; }
+.ic strong { color: var(--text); }
+
+.ai-decl {
+  display: flex; gap: 9px; align-items: flex-start;
+  background: #F0FDF4; border: 1px solid #86EFAC;
+  border-radius: 8px; padding: 11px 14px;
+  font-size: 12px; color: #166534; margin-top: 14px;
+  line-height: 1.5;
+}
+
+/* ── Slide Preview ────────────────────────────────────────── */
+.slide-card {
+  background: var(--bg); border: 1px solid var(--card-border);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 11px;
+}
+.slide-num   { font-size: 10px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.slide-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.slide-pts   { font-size: 12.5px; color: var(--mid); line-height: 1.6; }
+.slide-note  { font-size: 11px; color: #166534; background: #F0FDF4; border-radius: 5px; padding: 4px 9px; margin-top: 7px; }
+
+/* ── Download Row ─────────────────────────────────────────── */
+.dl-row {
+  display: flex; gap: 10px; padding: 16px 20px;
+  border-top: 1px solid var(--card-border);
+  background: var(--bg); flex-wrap: wrap;
+}
+
+.dl-btn {
+  flex: 1; min-width: 140px; padding: 11px 16px;
+  border-radius: 9px; font-family: var(--font-head); font-size: 12.5px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all .2s; border: none; position: relative; overflow: hidden;
+}
+.dl-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.dl-btn:active { transform: scale(.98); }
+.dl-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.dl-btn.docx { background: #2B579A; color: #fff; box-shadow: 0 3px 10px rgba(43,87,154,.3); }
+.dl-btn.pdf  { background: var(--red); color: #fff; box-shadow: 0 3px 10px rgba(232,52,74,.3); }
+.dl-btn.pptx { background: var(--orange); color: #fff; box-shadow: 0 3px 10px rgba(192,104,32,.3); }
+
+.dl-btn .dl-spin {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .65s linear infinite;
+  display: none;
+}
+.dl-btn.loading .dl-spin { display: block; }
+.dl-btn.loading .dl-label { display: none; }
+
+/* ── Note ─────────────────────────────────────────────────── */
+.note-box {
+  margin: 1rem 1.5rem 0; padding: 12px 16px;
+  background: var(--gold-lt); border: 1px solid #FFD97A;
+  border-radius: 9px; font-size: 12.5px; color: #7B5B00;
+  display: none; gap: 9px; align-items: flex-start; line-height: 1.5;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.footer {
+  text-align: center; padding: 2rem 1.5rem 1rem;
+  font-size: 11px; color: var(--light);
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .4s ease both; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-blob header-blob-1"></div>
+    <div class="header-blob header-blob-2"></div>
+    <div class="header-inner">
+      <div class="header-logo">D</div>
+      <div class="header-text">
+        <h1>ILAW Lesson Planning Agent</h1>
+        <p>Department of Education · Grade 8 · DepEd Order No. 09, s. 2026</p>
+        <div class="header-badges">
+          <span class="hbadge hbadge-gold">ILAW Framework</span>
+          <span class="hbadge hbadge-teal">SY 2026–2027 · Three-Term</span>
+          <span class="hbadge hbadge-white">TLE 8</span>
+          <span class="hbadge hbadge-white">Values Ed 8</span>
+          <span class="hbadge hbadge-white">Filipino 8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ILAW Legend -->
+  <div class="ilaw-legend">
+    <div class="ilaw-pill">
+      <div class="ilaw-letter" style="color:#3B5BA5">I</div>
+      <div class="ilaw-word" style="color:#3B5BA5">Intentions</div>
+      <div class="ilaw-desc">Goals tied to MATATAG competency</div>
+    </div>
+    <div class="ilaw-pill">
+      <div class="ilaw-letter" style="color:#1A7A4A">L</div>
+      <div class="ilaw-word" style="color:#1A7A4A">Learning Experiences</div>
+      <div class="ilaw-desc">Sequenced activities with timing</div>
+    </div>
+    <div class="ilaw-pill">
+      <div class="ilaw-letter" style="color:#C06820">A</div>
+      <div class="ilaw-word" style="color:#C06820">Assessment</div>
+      <div class="ilaw-desc">Formative checks &amp; exit ticket</div>
+    </div>
+    <div class="ilaw-pill">
+      <div class="ilaw-letter" style="color:#7B3FA0">W</div>
+      <div class="ilaw-word" style="color:#7B3FA0">Ways Forward</div>
+      <div class="ilaw-desc">Reflection &amp; next steps</div>
+    </div>
+  </div>
+
+  <!-- Term Selector -->
+  <div class="term-selector">
+    <div class="term-card active" data-term="Term 1" data-dates="June 8 – Sept 15, 2026" data-weeks="14" onclick="selTerm(this)">
+      <div class="term-num">Term 1</div>
+      <div class="term-name">First Term</div>
+      <div class="term-dates">June 8 – Sept 15, 2026</div>
+    </div>
+    <div class="term-card" data-term="Term 2" data-dates="Sept 16 – Dec 18, 2026" data-weeks="13" onclick="selTerm(this)">
+      <div class="term-num">Term 2</div>
+      <div class="term-name">Second Term</div>
+      <div class="term-dates">Sept 16 – Dec 18, 2026</div>
+    </div>
+    <div class="term-card" data-term="Term 3" data-dates="Jan 4 – Apr 8, 2027" data-weeks="14" onclick="selTerm(this)">
+      <div class="term-num">Term 3</div>
+      <div class="term-name">Third Term</div>
+      <div class="term-dates">Jan 4 – Apr 8, 2027</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Subject -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">1</div>
+      <div class="card-header-title">Select subject</div>
+    </div>
+    <div class="card-body">
+      <div class="subject-grid">
+        <div class="subject-opt sel" data-value="TLE 8" onclick="selSubj(this)">
+          <span class="subject-icon">🔧</span>
+          <span class="subject-label">TLE 8</span>
+        </div>
+        <div class="subject-opt" data-value="Values Education 8" onclick="selSubj(this)">
+          <span class="subject-icon">🌟</span>
+          <span class="subject-label">Values Ed 8</span>
+        </div>
+        <div class="subject-opt" data-value="Filipino 8" onclick="selSubj(this)">
+          <span class="subject-icon">📖</span>
+          <span class="subject-label">Filipino 8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Lesson Details -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">2</div>
+      <div class="card-header-title">Lesson details</div>
+    </div>
+    <div class="card-body">
+
+      <div class="field">
+        <div class="field-label">Week</div>
+        <div id="weekGrid" class="week-grid"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Lesson topic</div>
+        <input type="text" id="topic" placeholder="e.g., Introduction to Electrical Installation" />
+      </div>
+
+      <div class="field">
+        <div class="field-label">MATATAG Competency code <span class="opt-tag">optional</span></div>
+        <div class="hint">Leave blank — the AI will infer the best-fit competency from your topic.</div>
+        <input type="text" id="lc" placeholder="e.g., TLE_ICTHS7/8EI-0a-1" />
+      </div>
+
+      <div class="field">
+        <div class="field-label">Competency description <span class="opt-tag">optional</span></div>
+        <textarea id="lcd" placeholder="Paste from the MATATAG curriculum guide, or leave blank..."></textarea>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Class profile / notes <span class="opt-tag">optional</span></div>
+        <div class="hint">e.g., mixed abilities, limited devices, students need scaffolding</div>
+        <input type="text" id="cp" placeholder="e.g., Mixed abilities, some students need remediation" />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Step 3: Teacher Info -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">3</div>
+      <div class="card-header-title">Teacher information</div>
+    </div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="field">
+          <div class="field-label">Teacher's name</div>
+          <input type="text" id="tname" placeholder="e.g., Ma. Santos" />
+        </div>
+        <div class="field">
+          <div class="field-label">Section</div>
+          <input type="text" id="sec" placeholder="e.g., Grade 8 - Rizal" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Button -->
+  <div class="gen-wrap">
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      <span>✨</span>
+      <span id="genLabel">Generate ILAW Lesson Plan + Student PowerPoint</span>
+      <div class="spin" id="genSpin" style="display:none"></div>
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div id="errBox" class="err-box"></div>
+
+  <!-- Result -->
+  <div id="resultWrap" class="result-wrap" style="display:none"></div>
+
+  <!-- Note -->
+  <div id="noteBox" class="note-box">
+    ℹ️ <span id="noteText"></span>
+  </div>
+
+  <div class="footer">
+    DepEd Grade 8 ILAW Lesson Planning Agent · DO 09 s. 2026 · MATATAG Curriculum · SY 2026–2027
+  </div>
+
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let subject  = 'TLE 8';
+let term     = 'Term 1';
+let termDates= 'June 8 – Sept 15, 2026';
+let week     = 'Week 1';
+let result   = null;
+
+// Detect if running on the local server or as a standalone page
+const API_BASE = '';
+
+// ── Term / Week / Subject ────────────────────────────────────
+function selTerm(el) {
+  document.querySelectorAll('.term-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  term      = el.dataset.term;
+  termDates = el.dataset.dates;
+  week      = 'Week 1';
+  renderWeeks(parseInt(el.dataset.weeks));
+}
+
+function renderWeeks(count) {
+  const g = document.getElementById('weekGrid');
+  g.innerHTML = Array.from({length: count}, (_, i) => {
+    const w = 'Week ' + (i + 1);
+    return `<div class="week-chip${w === week ? ' sel' : ''}" onclick="selWeek(this,'${w}')">${w}</div>`;
+  }).join('');
+}
+
+function selWeek(el, w) {
+  document.querySelectorAll('.week-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  week = w;
+}
+
+function selSubj(el) {
+  document.querySelectorAll('.subject-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  subject = el.dataset.value;
+}
+
+// ── Generate ─────────────────────────────────────────────────
+async function generate() {
+  const topic   = document.getElementById('topic').value.trim();
+  const lc      = document.getElementById('lc').value.trim();
+  const lcd     = document.getElementById('lcd').value.trim();
+  const cp      = document.getElementById('cp').value.trim();
+  const teacher = document.getElementById('tname').value.trim() || 'Teacher';
+  const section = document.getElementById('sec').value.trim() || 'Grade 8';
+
+  if (!topic) { showErr('Please enter a lesson topic first.'); return; }
+  hideErr();
+  setLoading(true);
+  document.getElementById('resultWrap').style.display = 'none';
+  document.getElementById('noteBox').style.display = 'none';
+
+  const lcLine = lc
+    ? `MATATAG Competency Code: ${lc}\nCompetency Description: ${lcd || 'infer from code and topic'}`
+    : `MATATAG Competency Code: not provided — infer the best-fit code for this subject, grade, and topic\nCompetency Description: not provided`;
+
+  const prompt = `You are an expert Filipino educator. Generate two things:
+
+1. A complete ILAW-format lesson plan (DepEd Order 09 s. 2026)
+2. A STUDENT-FACING classroom teaching PowerPoint — slides the teacher will project in class while teaching Grade 8 students. These are NOT plan summaries. They contain the actual lesson content: definitions, examples, key ideas, step-by-step activities, and questions — everything a student sees on the screen during the lesson.
+
+Details:
+- Subject: ${subject}
+- Grade: 8, SY 2026–2027, Three-Term Calendar
+- Term: ${term} (${termDates}), ${week}
+- Topic: ${topic}
+- ${lcLine}
+- Class profile: ${cp || 'General mixed-ability Grade 8 class'}
+- Teacher: ${teacher}, Section: ${section}
+- Duration: 60 minutes
+
+Return ONLY valid JSON (no markdown, no backticks):
+{
+  "meta": {
+    "teacher": "${teacher}", "section": "${section}", "subject": "${subject}",
+    "grade": "8", "term": "${term}", "termDates": "${termDates}", "week": "${week}",
+    "topic": "${topic}", "competencyCode": "inferred or provided LC code",
+    "competencyDesc": "full competency description",
+    "duration": "60 minutes", "resources": ["list", "of", "materials"]
+  },
+  "intentions": {
+    "competency": "MATATAG competency statement",
+    "objectives": [
+      { "type": "Knowledge", "text": "learner-centered knowledge objective" },
+      { "type": "Skills", "text": "learner-centered skills objective" },
+      { "type": "Attitude", "text": "learner-centered attitude objective" }
+    ]
+  },
+  "learningExperiences": [
+    { "step": 1, "phase": "Hook", "duration": "5 mins", "description": "engaging opening activity" },
+    { "step": 2, "phase": "Mini-lesson", "duration": "15 mins", "description": "direct instruction on key concepts" },
+    { "step": 3, "phase": "Guided Practice", "duration": "15 mins", "description": "structured activity" },
+    { "step": 4, "phase": "Application", "duration": "15 mins", "description": "independent or group task" },
+    { "step": 5, "phase": "Wrap-up", "duration": "10 mins", "description": "summary and exit ticket transition" }
+  ],
+  "assessment": {
+    "formativeCheck": "in-lesson formative check description",
+    "exitTicket": "single focused exit ticket question or task"
+  },
+  "waysForward": {
+    "reflection": "2-3 sentence teacher reflection placeholder",
+    "remediation": "follow-up for students who did not meet the objective",
+    "enrichment": "extension for students who exceeded the objective"
+  },
+  "aiDeclaration": "This ILAW lesson plan was generated with AI assistance (Claude, Anthropic) and reviewed for alignment with the MATATAG curriculum. Per DepEd Order No. 03, s. 2026.",
+  "slides": [
+    { "slideNum": 1, "type": "title", "title": "${topic}", "subtitle": "${subject} | Grade 8 | ${term}, ${week}", "teacher": "${teacher}", "section": "${section}", "teacherNote": "Display while students settle. Briefly introduce the topic." },
+    { "slideNum": 2, "type": "objectives", "title": "What We Will Learn Today", "objectives": ["By the end of this lesson, you will be able to...", "knowledge objective in student language", "skills objective in student language", "values objective in student language"], "teacherNote": "Read objectives aloud. Ask: Which feels most challenging?" },
+    { "slideNum": 3, "type": "hook", "title": "Think About This...", "hookQuestion": "A compelling real-world question or scenario for Grade 8 Filipino students", "activity": "Think-Pair-Share or quick activity description", "teacherNote": "Give 2 minutes to think and share before class discussion." },
+    { "slideNum": 4, "type": "keyterms", "title": "Key Terms", "terms": [{"term":"Term 1","definition":"student-friendly definition"},{"term":"Term 2","definition":"student-friendly definition"},{"term":"Term 3","definition":"student-friendly definition"},{"term":"Term 4","definition":"student-friendly definition"}], "teacherNote": "Have students copy terms. Ask them to predict meanings first." },
+    { "slideNum": 5, "type": "content1", "title": "main concept title", "points": ["clear explanation 1","explanation 2","explanation 3 with example"], "example": "concrete real-world Philippine example", "teacherNote": "Explain each point. Ask comprehension questions." },
+    { "slideNum": 6, "type": "content2", "title": "second concept title", "points": ["explanation 1","explanation 2","explanation 3"], "example": "another concrete example", "teacherNote": "Connect to the previous slide." },
+    { "slideNum": 7, "type": "guidedpractice", "title": "Let's Practice Together", "instructions": "clear instruction for guided practice", "steps": ["step 1","step 2","step 3"], "guideQuestions": ["guide question 1?","guide question 2?"], "teacherNote": "Walk through with the whole class. Call on different students." },
+    { "slideNum": 8, "type": "application", "title": "Your Turn!", "taskTitle": "activity name", "instructions": "clear instruction for the task", "steps": ["step 1","step 2","step 3"], "timeGiven": "12 minutes", "teacherNote": "Circulate. Look for misconceptions to address during wrap-up." },
+    { "slideNum": 9, "type": "summary", "title": "What We Learned", "takeaways": ["key takeaway 1","key takeaway 2","key takeaway 3","key takeaway 4"], "bigIdea": "One sentence big idea of the lesson", "teacherNote": "Ask 2-3 students to share before revealing takeaways." },
+    { "slideNum": 10, "type": "exitticket", "title": "Exit Ticket", "question": "the exit ticket question", "directions": "Answer on a half-sheet of paper before you leave.", "teacherNote": "Collect exit tickets. Use them to plan next session." }
+  ]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'API error');
+    const raw   = data.content.find(b => b.type === 'text')?.text || '';
+    const clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    result = JSON.parse(clean);
+    renderResult();
+  } catch(e) {
+    showErr('Could not generate lesson plan. Please try again. (' + e.message + ')');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Render Result ─────────────────────────────────────────────
+function renderResult() {
+  const wrap = document.getElementById('resultWrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div class="result-card fade-up">
+      <div class="result-header">
+        <div class="result-header-title">✅ ${result.meta.topic}</div>
+        <div class="result-header-meta">${result.meta.subject} · ${result.meta.term}</div>
+      </div>
+      <div class="result-tabs">
+        <button class="rtab active" id="t-ilaw" onclick="switchTab('ilaw')">💡 ILAW Lesson Plan</button>
+        <button class="rtab" id="t-slides" onclick="switchTab('slides')">🎓 Student Slides Preview</button>
+      </div>
+      <div class="result-body" id="resultBody">${renderILAW()}</div>
+      <div class="dl-row">
+        <button class="dl-btn docx" id="dlDocx" onclick="download('docx')">
+          <div class="dl-spin"></div>
+          <span class="dl-label">📄 Download .docx</span>
+        </button>
+        <button class="dl-btn pdf" id="dlPdf" onclick="download('pdf')">
+          <div class="dl-spin"></div>
+          <span class="dl-label">📕 Download .pdf</span>
+        </button>
+        <button class="dl-btn pptx" id="dlPptx" onclick="download('pptx')">
+          <div class="dl-spin"></div>
+          <span class="dl-label">🎨 Download Student .pptx</span>
+        </button>
+      </div>
+    </div>`;
+
+  const nb = document.getElementById('noteBox');
+  nb.style.display = 'flex';
+  document.getElementById('noteText').textContent =
+    'ILAW lesson plan and student slide content generated! Click Download Student .pptx to build the full classroom presentation.';
+}
+
+function switchTab(tab) {
+  document.getElementById('t-ilaw').className   = 'rtab' + (tab==='ilaw'?' active':'');
+  document.getElementById('t-slides').className = 'rtab' + (tab==='slides'?' active':'');
+  document.getElementById('resultBody').innerHTML = tab==='ilaw' ? renderILAW() : renderSlides();
+}
+
+function renderILAW() {
+  const m = result.meta, p = result;
+  return `
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-lbl">Teacher</div><div class="meta-val">${m.teacher}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Section</div><div class="meta-val">${m.section}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Subject / Grade</div><div class="meta-val">${m.subject} — Grade ${m.grade}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Term / Week</div><div class="meta-val">${m.term}, ${m.week}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Term Dates</div><div class="meta-val" style="font-size:11px">${m.termDates}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Duration</div><div class="meta-val">${m.duration}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Competency Code</div><div class="meta-val" style="font-size:11px">${m.competencyCode}</div></div>
+      <div class="meta-item"><div class="meta-lbl">Resources</div><div class="meta-val" style="font-size:11px">${m.resources.join(', ')}</div></div>
+    </div>
+
+    <div class="ilaw-block">
+      <div class="ilaw-block-header">
+        <div class="ilaw-block-badge" style="background:#3B5BA5">I</div>
+        <div>
+          <div class="ilaw-block-title">Intentions</div>
+          <div class="ilaw-block-sub">Learner goals tied to MATATAG competency</div>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--mid);margin-bottom:11px;line-height:1.6">${p.intentions.competency}</p>
+      ${p.intentions.objectives.map(o => `
+        <div class="obj-row">
+          <span class="obj-tag" style="background:${o.type==='Knowledge'?'#DBEAFE':o.type==='Skills'?'#DCFCE7':'#FAF5FF'};color:${o.type==='Knowledge'?'#1E40AF':o.type==='Skills'?'#166534':'#6B21A8'}">${o.type}</span>
+          <span class="obj-text">${o.text}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="ilaw-block">
+      <div class="ilaw-block-header">
+        <div class="ilaw-block-badge" style="background:#1A7A4A">L</div>
+        <div>
+          <div class="ilaw-block-title">Learning Experiences</div>
+          <div class="ilaw-block-sub">Sequenced activities with timing</div>
+        </div>
+      </div>
+      ${p.learningExperiences.map(le => `
+        <div class="le-step">
+          <div class="le-num">${le.step}</div>
+          <div style="flex:1">
+            <div class="le-phase">${le.phase}</div>
+            <div class="le-desc">${le.description}</div>
+          </div>
+          <div class="le-time">${le.duration}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="ilaw-block">
+      <div class="ilaw-block-header">
+        <div class="ilaw-block-badge" style="background:#C06820">A</div>
+        <div>
+          <div class="ilaw-block-title">Assessment</div>
+          <div class="ilaw-block-sub">Formative checks and exit ticket</div>
+        </div>
+      </div>
+      <div class="ic">
+        <p><strong>Formative check:</strong> ${p.assessment.formativeCheck}</p>
+        <p><strong>Exit ticket:</strong> ${p.assessment.exitTicket}</p>
+      </div>
+    </div>
+
+    <div class="ilaw-block">
+      <div class="ilaw-block-header">
+        <div class="ilaw-block-badge" style="background:#7B3FA0">W</div>
+        <div>
+          <div class="ilaw-block-title">Ways Forward</div>
+          <div class="ilaw-block-sub">Reflection and next-session adjustments</div>
+        </div>
+      </div>
+      <div class="ic">
+        <p><strong>Reflection:</strong> ${p.waysForward.reflection}</p>
+        <p><strong>Remediation:</strong> ${p.waysForward.remediation}</p>
+        <p><strong>Enrichment:</strong> ${p.waysForward.enrichment}</p>
+      </div>
+      <div class="ai-decl">🤖 <span><strong>Declaration of AI Use:</strong> ${p.aiDeclaration}</span></div>
+    </div>`;
+}
+
+function renderSlides() {
+  return result.slides.map(s => {
+    let content = '';
+    if (s.type==='title')       content = `<div class="slide-pts"><strong>${s.subtitle||''}</strong></div>`;
+    else if (s.type==='objectives') content = `<div class="slide-pts">${(s.objectives||[]).map(o=>'• '+o).join('<br/>')}</div>`;
+    else if (s.type==='hook')   content = `<div class="slide-pts"><em>"${s.hookQuestion||''}"</em><br/><br/><strong>Activity:</strong> ${s.activity||''}</div>`;
+    else if (s.type==='keyterms') content = `<div class="slide-pts">${(s.terms||[]).map(t=>`<strong>${t.term}</strong> — ${t.definition}`).join('<br/><br/>')}</div>`;
+    else if (s.points)          content = `<div class="slide-pts">${s.points.map(p=>'• '+p).join('<br/>')}${s.example?`<br/><br/><em>Example: ${s.example}</em>`:''}</div>`;
+    else if (s.steps)           content = `<div class="slide-pts">${s.instructions||''}<br/><br/>${(s.steps||[]).map((st,i)=>`${i+1}. ${st}`).join('<br/>')}</div>`;
+    else if (s.takeaways)       content = `<div class="slide-pts">${(s.takeaways||[]).map(t=>'✓ '+t).join('<br/>')}${s.bigIdea?`<br/><br/><em>${s.bigIdea}</em>`:''}</div>`;
+    else if (s.type==='exitticket') content = `<div class="slide-pts"><strong>${s.question||''}</strong><br/><br/><em>${s.directions||''}</em></div>`;
+    return `
+      <div class="slide-card">
+        <div class="slide-num">Slide ${s.slideNum} · ${s.type}</div>
+        <div class="slide-title">${s.title}</div>
+        ${content}
+        ${s.teacherNote ? `<div class="slide-note">🧑‍🏫 ${s.teacherNote}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ── Download ──────────────────────────────────────────────────
+async function download(type) {
+  if (!result) return;
+
+  if (type === 'pptx') {
+    const btn = document.getElementById('dlPptx');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + '/api/generate-pptx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Server error');
+      }
+
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const safe = (result.meta.topic || 'Lesson').replace(/[^a-zA-Z0-9\s]/g,'').replace(/\s+/g,'_').substring(0,40);
+      a.href     = url;
+      a.download = `Grade8_${safe}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      showErr('Could not generate PPTX. Make sure the server is running. (' + e.message + ')');
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+
+  } else {
+    // For docx/pdf — pass to Claude in the parent chat
+    if (typeof sendPrompt === 'function') {
+      const label = type === 'docx' ? 'Word (.docx)' : 'PDF';
+      sendPrompt('Please generate the ILAW lesson plan as a ' + label + ' file. ILAW data: ' + JSON.stringify(result));
+    } else {
+      showErr('To download as ' + type.toUpperCase() + ', use this app inside the Claude chat window.');
+    }
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setLoading(on) {
+  const btn   = document.getElementById('genBtn');
+  const spin  = document.getElementById('genSpin');
+  const label = document.getElementById('genLabel');
+  btn.disabled   = on;
+  spin.style.display  = on ? 'block' : 'none';
+  label.textContent   = on ? 'Generating lesson plan...' : 'Generate ILAW Lesson Plan + Student PowerPoint';
+}
+function showErr(m) { const b = document.getElementById('errBox'); b.style.display='block'; b.textContent=m; }
+function hideErr()  { document.getElementById('errBox').style.display='none'; }
+
+// ── Init ──────────────────────────────────────────────────────
+renderWeeks(14);
+</script>
+</body>
+</html>

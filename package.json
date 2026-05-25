@@ -1,0 +1,15 @@
+{
+  "name": "deped-ilaw-agent",
+  "version": "1.0.0",
+  "description": "DepEd Grade 8 ILAW Lesson Planning Agent — SY 2026-2027",
+  "main": "api/generate-pptx.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
